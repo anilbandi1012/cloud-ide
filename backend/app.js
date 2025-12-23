@@ -28,22 +28,72 @@ app.post("/run", async (req, res) => {
       fs.unlinkSync(tempFile);
       res.json({ output: output.toString() });
     } else if (language === "cpp") {
+      const { spawnSync } = require("child_process");
+
       const tempCpp = path.join(__dirname, "temp.cpp");
-      const tempExe = path.join(__dirname, "temp.exe");
+      const tempExe = path.join(__dirname, "temp.out");
+
       fs.writeFileSync(tempCpp, code);
-      execSync(`g++ "${tempCpp}" -o "${tempExe}"`, { timeout: 5000 });
-      const output = execSync(`"${tempExe}"`, { timeout: 5000 });
+
+      // Compile
+      const compile = spawnSync("g++", [tempCpp, "-o", tempExe], {
+        timeout: 10000,
+        encoding: "utf-8"
+      });
+
+      if (compile.stderr) {
+        fs.unlinkSync(tempCpp);
+        return res.json({ output: compile.stderr });
+      }
+
+      // Run
+      const run = spawnSync(tempExe, [], {
+        input: "",          // 🔴 prevents stdin blocking
+        timeout: 10000,     // 🔴 prevents infinite loops
+        encoding: "utf-8"
+      });
+
       fs.unlinkSync(tempCpp);
       fs.unlinkSync(tempExe);
-      res.json({ output: output.toString() });
-    } else if (language === "java") {
-      const tempFile = path.join(__dirname, "Main.java");
-      fs.writeFileSync(tempFile, code);
-      execSync(`javac "${tempFile}"`, { timeout: 5000 });
-      const output = execSync(`java -cp "${__dirname}" Main`, { timeout: 5000 });
-      fs.unlinkSync(tempFile);
+
+      if (run.error) {
+        return res.json({ output: run.error.message });
+      }
+
+      res.json({ output: run.stdout || run.stderr });
+    }
+    else if (language === "java") {
+      const { spawnSync } = require("child_process");
+
+      const tempJava = path.join(__dirname, "Main.java");
+      fs.writeFileSync(tempJava, code);
+
+      // Compile
+      const compile = spawnSync("javac", [tempJava], {
+        timeout: 10000,
+        encoding: "utf-8"
+      });
+
+      if (compile.stderr) {
+        fs.unlinkSync(tempJava);
+        return res.json({ output: compile.stderr });
+      }
+
+      // Run
+      const run = spawnSync("java", ["-cp", __dirname, "Main"], {
+        input: "",          // 🔴 prevents stdin blocking
+        timeout: 15000,     // 🔴 Java needs more time
+        encoding: "utf-8"
+      });
+
+      fs.unlinkSync(tempJava);
       fs.unlinkSync(path.join(__dirname, "Main.class"));
-      res.json({ output: output.toString() });
+
+      if (run.error) {
+        return res.json({ output: run.error.message });
+      }
+
+      res.json({ output: run.stdout || run.stderr });
     } else {
       res.json({ output: "Language not supported yet" });
     }
