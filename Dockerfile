@@ -10,10 +10,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # ---------- FRONTEND ----------
-COPY client ./client
 WORKDIR /app/client
+COPY client/package*.json ./
 RUN npm install
-RUN npm run build   # creates dist/
+COPY client .
+RUN npm run build
 
 # ---------- BACKEND ----------
 WORKDIR /app
