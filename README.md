@@ -41,4 +41,18 @@ npm run build
 # Run server
 cd ../backend
 node index.js
+```
 
+##Future Enhancements
+
+- Add custom input support for code execution
+
+- Add multi-file project support
+
+- Add memory and CPU limits per execution
+
+- Queue system for handling large programs safely
+
+- Real-time collaboration (like VS Code Live Share)
+
+- Support for additional languages (Ruby, Go, etc.)
