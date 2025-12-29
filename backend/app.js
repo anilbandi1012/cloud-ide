@@ -24,7 +24,7 @@ app.post("/run", async (req, res) => {
     } else if (language === "python") {
       const tempFile = path.join(__dirname, "temp.py");
       fs.writeFileSync(tempFile, code);
-      const output = execSync(`python "${tempFile}"`, { timeout: 5000 });
+      const output = execSync(`python3 "${tempFile}"`, { timeout: 5000 });
       fs.unlinkSync(tempFile);
       res.json({ output: output.toString() });
     } else if (language === "cpp") {
